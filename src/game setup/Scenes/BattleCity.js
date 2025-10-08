@@ -3,13 +3,6 @@ export default class BattleCity extends Phaser.Scene {
         super({ key: 'BattleCity' });
     }
 
-    preload(){
-        this.load.image('player', 'assets/player tank.png');
-        this.load.image('block', 'assets/Red Brick Wall.jpeg');
-        this.load.image('ironBlock', 'assets/iron_block.png');
-        this.load.image('enemyTank', 'assets/enemy tank.png');
-    }
-
     init(){
         this.cameras.main.setBackgroundColor('000000')
     }
