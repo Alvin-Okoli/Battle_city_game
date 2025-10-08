@@ -23,4 +23,3 @@ export default function Game({parent, width= 550, height= 1000}) {
     });
 };
 
-//
