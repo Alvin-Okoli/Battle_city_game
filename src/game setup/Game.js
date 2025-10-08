@@ -15,7 +15,7 @@ export default function Game({parent, width= 550, height= 1000}) {
                 debug: true
             }
         },
-        scene: [  BattleCity],
+        scene: [ LoadingScene, BattleCity],
         scale: {
             mode: Phaser.Scale.FIT,
             autoCenter: Phaser.Scale.CENTER_HORIZONTALLY
@@ -23,4 +23,4 @@ export default function Game({parent, width= 550, height= 1000}) {
     });
 };
 
-//LoadingScene,
+//
