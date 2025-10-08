@@ -6,10 +6,11 @@ export default class LoadingScene extends Phaser.Scene{
     preload(){
         console.log("Loading Scene");
         console.log(this.game.config.width)
-        this.load.image('bg', './assets/wallpaper.jpeg');
-        this.load.image('player', './assets/player tank.png');
-        this.load.image('block', './assets/iron_block.png');
-        this.load.image('enemyTank', './assets/enemy tank.png');
+        this.load.image('bg', 'assets/wallpaper.jpeg');
+        this.load.image('player', 'assets/player tank.png');
+        this.load.image('block', 'assets/Red Brick Wall.jpeg');
+        this.load.image('ironBlock', 'assets/iron_block.png');
+        this.load.image('enemyTank', 'assets/enemy tank.png');
     }
 
     create(){
