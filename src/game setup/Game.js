@@ -12,7 +12,7 @@ export default function Game({parent, width= 550, height= 1000}) {
         physics: {
             default: 'arcade',
             arcade: {
-                debug: true
+                debug: false
             }
         },
         scene: [ LoadingScene, BattleCity],

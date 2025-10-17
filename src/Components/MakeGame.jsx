@@ -13,13 +13,15 @@ export default function MakeGame() {
     })
 
     return (
-        <div
-            ref={gameRef}
-            style={{
-            // width: "600px",
-            height: "800px",
-            margin: "10px auto",
-        }}
-        />
+        <>
+            {/* <div>Hello World!</div> */}
+            <div
+                ref={gameRef}
+                style={{
+                // width: "600px",
+                height: "800px",
+                // margin: "",
+            }}/>
+        </>
     )
 };
