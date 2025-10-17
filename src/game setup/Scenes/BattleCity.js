@@ -2,12 +2,13 @@ import Phaser from 'phaser';
 
 export default class BattleCity extends Phaser.Scene {
     constructor() {
-        super({ key: 'BattleCity' });
+        super({ key:'BattleCity' });
+
+        this.speed = 200
     }
 
     init(){
-        this.cameras.main.setBackgroundColor('000000')
-        
+        this.cameras.main.setBackgroundColor('000000');
     }
 
     blockSetup(positionx, positiony, loopy, space = 0, scaleX=0.1, scaleY=0.2){        
@@ -23,14 +24,33 @@ export default class BattleCity extends Phaser.Scene {
         this.ironBlockGroup.add(block);
     }
 
+    createEnemy({x=this.game.config.width/2, y=this.game.config.height-900}){
+        const enemy = this.enemyTank = this.physics.add.sprite(x, y, 'enemyTank').setScale(0.5).setAngle(180);
+        enemy.setData({
+            nextTurn: 0,
+            speed: 160,
+            direction: 'down',
+            health: 3
+        })
+        enemy.bullet = this.physics.add.group();
+        this.enemyGroup.add(enemy)
+    }
+
+    changeDirection(enemy){
+        const direction = ['down', 'up', 'right', 'left']
+        let newDirection = direction[Phaser.Math.Between(0, 3)]
+        enemy.setData('direction', newDirection)
+    }
+
     create(){
         // GROUPS
         this.blockGroup = this.physics.add.group({immovable: true});
-        this.playerBulletGroup = this.physics.add.group();
         this.ironBlockGroup = this.physics.add.group({immovable: true})
+        this.playerBulletGroup = this.physics.add.group();
+        this.enemyGroup = this.physics.add.group({collideWorldBounds: true})
+        this.enemyBulletGroup = this.physics.add.group()
 
-        // enviroment Setup
-        
+        // enviroment Setup   
 
         // RED BLOCKS
         //first wall
@@ -87,8 +107,6 @@ export default class BattleCity extends Phaser.Scene {
         this.player.setCollideWorldBounds(true);
         this.player.setBodySize(80, 120, true);
         this.player.angleFacing = 0;
-        
-        this.speed = 200;
 
         // Target position (start as current player position)
         this.target = new Phaser.Math.Vector2(this.player.x, this.player.y);
@@ -100,9 +118,8 @@ export default class BattleCity extends Phaser.Scene {
         });
 
         //bullet
-
         this.time.addEvent({
-            delay: 300,
+            delay: 400,
             callback:()=>{
                 const rad = Phaser.Math.DegToRad(this.player.angleFacing);
                 const speed = 400;
@@ -115,24 +132,47 @@ export default class BattleCity extends Phaser.Scene {
 
                 bullet.rotation = rad;
                 bullet.angleFacing = this.player.angleFacing;
+                bullet.body.setSize(100, 0.2)
 
                 // this.physics.velocityFromRotation(40, speed, bullet.body.velocity);
                 this.playerBulletGroup.add(bullet);
             },
             loop: true
-        })        
+        })
 
         // enemy sprites
-        this.enemyTank = this.physics.add.sprite(this.game.config.width/2, this.game.config.height-900, 'enemyTank').setScale(0.5).setAngle(180);
+        this.enemyTank1 = this.createEnemy({});
+        this.enemyTank2 = this.createEnemy({x:this.game.config.width-50, y:this.game.config.height-900});
+        this.enemyTank3 = this.createEnemy({x:50, y:this.game.config.height-900});
+        // this.physics.add.world.on('worldbounds', ()=>{
+
+        // })
 
         // COLLISIONS
         // Collision to red blocks
-        this.physics.add.collider(this.player, this.blockGroup);
-        this.physics.add.collider(this.enemyTank, this.blockGroup);
+        this.physics.add.collider(this.blockGroup, this.player);
+        this.physics.add.collider(this.blockGroup, this.enemyGroup, (block, enemy)=>{
+            this.changeDirection(enemy)
+        });
+        this.physics.add.collider(this.blockGroup, this.playerBulletGroup, (block, bullet)=>{
+            bullet.destroy();
+        })
 
         // Collision to iron blocks
         this.physics.add.collider(this.ironBlockGroup, this.player)
-        this.physics.add.collider(this.ironBlockGroup, this.enemyTank)
+        this.physics.add.collider(this.ironBlockGroup, this.enemyGroup, (block, enemy)=>{
+            this.changeDirection(enemy)
+        })
+        this.physics.add.collider(this.ironBlockGroup, this.playerBulletGroup, ( block, bullet)=>{
+            bullet.destroy();
+        })
+
+        //  Collision to Bullet and sprites
+        this.physics.add.collider(this.playerBulletGroup, this.enemyGroup, (bullet, tank)=>{
+            bullet.destroy();
+            tank.destroy();
+            this.createEnemy({x:Math.abs(Math.random()* this.game.config.width), y:this.game.config.height-950})
+        })
     }
 
     update(time, delta) {
@@ -144,7 +184,7 @@ export default class BattleCity extends Phaser.Scene {
 
         this.player.body.setVelocity(0);
         
-        if(Math.abs(this.distanceX)>4){
+        if(Math.abs(this.distanceX)>20){
             if(this.distanceX > 0){
                 // move right
                 this.player.body.setVelocityX(this.speed);
@@ -159,7 +199,7 @@ export default class BattleCity extends Phaser.Scene {
             }
         }
 
-        else if(Math.abs(this.distanceY) > 4){
+        else if(Math.abs(this.distanceY) > 20){
             if(this.distanceY > 0){
                 // // move down
                 this.player.setVelocityY(moveSpeed);
@@ -174,20 +214,23 @@ export default class BattleCity extends Phaser.Scene {
             }
         }
 
+        // Player bullet group
+        // bullet movement
         this.playerBulletGroup.children.each(function(bullet){
             if(bullet.angleFacing === -90){
-                bullet.x -= 10;
+                bullet.body.setVelocityX(-200)
             }
             else if(bullet.angleFacing === 90){
-                bullet.x += 10;
+                bullet.body.setVelocityX(200)
             }
             else if(bullet.angleFacing === 0){
-                bullet.y -= 10;
+                bullet.body.setVelocityY(-200)
             }
             else if(bullet.angleFacing === 180){
-                bullet.y += 10;
+                bullet.body.setVelocityY(200)
             }
 
+            // bullet clean up
             if(
                 bullet.x < 0 || bullet.x > this.game.config.width ||
                 bullet.y < 0 || bullet.y > this.game.config.height
@@ -195,37 +238,49 @@ export default class BattleCity extends Phaser.Scene {
                 bullet.destroy();
             }
         }, this);
+
+        // Enemy Sprites
+        this.enemyGroup.children.each(function(enemy){
+
+            let enemyNextTurn = enemy.getData('nextTurn')
+
+            // movement logic       
+            if(time > enemyNextTurn){
+                // reset speed
+                enemy.setVelocity(0, 0) 
+                // Change direction for this specific enemy
+                this.changeDirection(enemy);
+                // get direction for this specific enemy
+                const direction = enemy.getData('direction')
+                // get speed for this specific enemy
+                const speed = enemy.getData('speed')
+
+                if(direction === 'down'){
+                    enemy.rotation = Phaser.Math.DegToRad(180)
+                    enemy.setVelocityY(speed)
+                }
+                else if(direction === 'up'){
+                    enemy.rotation = Phaser.Math.DegToRad(0)
+                    enemy.setVelocityY(-speed)
+                }
+                else if(direction === 'right'){
+                    enemy.rotation = Phaser.Math.DegToRad(90)
+                    enemy.setVelocityX(speed)
+                }
+                else if(direction === 'left'){
+                    enemy.rotation = Phaser.Math.DegToRad(-90)
+                    enemy.setVelocityX(-speed)
+                }
+                enemy.setData('nextTurn', time + Phaser.Math.Between(1000, 3000))
+
+            // enemy shooting
+            const bullet = enemy.bullet.create(enemy.x, enemy.y, 'bullet').setScale(0.1, 0.03);
+            const dir = enemy.getData('direction');
+            if (dir === 'up') bullet.setVelocityY(-300);
+            else if (dir === 'down') bullet.setVelocityY(300);
+            else if (dir === 'left') bullet.setVelocityX(-300);
+            else if (dir === 'right') bullet.setVelocityX(300);
+            }
+        }, this)
     }
 }
-
-// if(Math.abs(this.target.x - this.player.x)>4){
-//             if(this.target.x < this.player.x){
-//                 //move left
-//                 this.player.body.setMaxVelocityX(moveSpeed);
-//                 this.player.rotation = Phaser.Math.DegToRad(-90);
-//                 this.player.angleFacing = -90
-//             }
-//             else if(this.target.x > this.player.x){
-//             //move right
-//                 this.player.body.setVelocityX(moveSpeed);
-//                 this.player.rotation = Phaser.Math.DegToRad(90)
-//                 this.player.angleFacing = 90
-//             }
-//         }
-
-//         else if(Math.abs(this.target.y - this.player.y)>4){
-//             if(this.target.y < this.player.y){
-//             //move up
-//                 this.player.y -= moveSpeed
-//                 this.player.rotation = Phaser.Math.DegToRad(0)
-//                 this.player.angleFacing = 0
-//             }
-//             else if(this.target.y > this.player.y){
-//             //move down
-//                 this.player.y += moveSpeed
-//                 this.player.rotation = Phaser.Math.DegToRad(180)
-//                 this.player.angleFacing = 180
-//             }
-//         }
-
-
