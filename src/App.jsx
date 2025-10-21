@@ -1,6 +1,6 @@
 import { useRef, useEffect } from 'react'
 import MakeGame from './Components/MakeGame'
-import Auth from './Components/AUth'
+import Auth from './Components/Auth'
 import "./App.css"
 
 function App() {  
