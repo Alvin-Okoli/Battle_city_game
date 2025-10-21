@@ -4,7 +4,10 @@ export default class BattleCity extends Phaser.Scene {
     constructor() {
         super({ key:'BattleCity' });
 
-        this.speed = 200
+        this.speed = 200;
+        this.playerHealthRecord = null;
+        this.score = null;
+        this.isPaused = false
     }
 
     init(){
@@ -25,6 +28,7 @@ export default class BattleCity extends Phaser.Scene {
     }
 
     createEnemy({x=this.game.config.width/2, y=this.game.config.height-900}){
+        // Create enemy tank and set its properties
         const enemy = this.enemyTank = this.physics.add.sprite(x, y, 'enemyTank').setScale(0.5).setAngle(180);
         enemy.setData({
             nextTurn: 0,
@@ -34,12 +38,38 @@ export default class BattleCity extends Phaser.Scene {
         })
         enemy.bullet = this.physics.add.group();
         this.enemyGroup.add(enemy)
+
+        // Enemy range
+        enemy.range = Phaser.Math.Vector2(150, 150)
+
+        // Enemy bullet collisions
+        this.enemyGroup.children.each((enemy)=>{
+            this.physics.add.collider(this.player, enemy.bullet, (player, bullet)=>{
+                bullet.destroy();
+                player.setTint(0xff0000);
+                this.time.delayedCall(200, ()=>{
+                    player.clearTint();
+                })
+                if(player.health > 0){
+                    player.health -= 1;
+                    this.playerHealthRecord.setText(`Health: ${player.health}`);
+                }
+            })
+            this.physics.add.collider(this.ironBlockGroup, enemy.bullet, (ironBlock, bullet)=>{
+                bullet.destroy();
+            })
+            this.physics.add.collider(this.blockGroup, enemy.bullet, (block, bullet)=>{
+                bullet.destroy();
+            })
+        })
     }
 
     changeDirection(enemy){
-        const direction = ['down', 'up', 'right', 'left']
-        let newDirection = direction[Phaser.Math.Between(0, 3)]
-        enemy.setData('direction', newDirection)
+        if(!this.isPaused){
+            const direction = ['down', 'up', 'right', 'left']
+            let newDirection = direction[Phaser.Math.Between(0, 3)]
+            enemy.setData('direction', newDirection)
+        }
     }
 
     create(){
@@ -50,8 +80,7 @@ export default class BattleCity extends Phaser.Scene {
         this.enemyGroup = this.physics.add.group({collideWorldBounds: true})
         this.enemyBulletGroup = this.physics.add.group()
 
-        // enviroment Setup   
-
+        // enviroment Setup  
         // RED BLOCKS
         //first wall
         let topGap = 450;
@@ -100,21 +129,41 @@ export default class BattleCity extends Phaser.Scene {
             this.ironBlockSetup(ironBlockArray[i])
         }
 
-        // SPRITES
+        // Text Setup 
+        this.playerHealthRecord = this.add.text(50, 20, `Health: 4`);
+        this.playerHealthRecord.depth = 2;
+        this.menuText = this.add.text(this.game.config.width - 80, 20, `Menu`);
+        this.menuText.depth = 2;
+        this.menuText.setInteractive({ useHandCursor: true });
 
+        this.menuText.on('pointerdown', () => {
+            this.isPaused = !this.isPaused;
+        if (this.isPaused) {
+            this.physics.pause();
+            this.pauseBlock = this.add.rectangle(this.game.config.width/2, 400, 300, 300, 0xffffff);
+        } else {
+            this.physics.resume();
+            this.pauseBlock.destroy();
+        }
+        });
+
+        // SPRITES
         // player sprites
         this.player = this.physics.add.sprite(this.game.config.width/2, this.game.config.height-100, 'player').setScale(0.5);
         this.player.setCollideWorldBounds(true);
         this.player.setBodySize(80, 120, true);
+        this.player.health = 4;
         this.player.angleFacing = 0;
+        // this.cameras.main.startFollow(this.player)
 
         // Target position (start as current player position)
         this.target = new Phaser.Math.Vector2(this.player.x, this.player.y);
 
         // Listen for pointer (click or tap)
         this.input.on('pointerdown', (pointer) => {
+        const worldPoint = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
         // Set the new target position to where the user clicked
-        this.target.set(pointer.x, pointer.y);
+        this.target.set(worldPoint.x, worldPoint.y);
         });
 
         //bullet
@@ -144,9 +193,6 @@ export default class BattleCity extends Phaser.Scene {
         this.enemyTank1 = this.createEnemy({});
         this.enemyTank2 = this.createEnemy({x:this.game.config.width-50, y:this.game.config.height-900});
         this.enemyTank3 = this.createEnemy({x:50, y:this.game.config.height-900});
-        // this.physics.add.world.on('worldbounds', ()=>{
-
-        // })
 
         // COLLISIONS
         // Collision to red blocks
@@ -239,7 +285,7 @@ export default class BattleCity extends Phaser.Scene {
             }
         }, this);
 
-        // Enemy Sprites
+        // Enemy Sprites Group
         this.enemyGroup.children.each(function(enemy){
 
             let enemyNextTurn = enemy.getData('nextTurn')
@@ -273,14 +319,20 @@ export default class BattleCity extends Phaser.Scene {
                 }
                 enemy.setData('nextTurn', time + Phaser.Math.Between(1000, 3000))
 
-            // enemy shooting
-            const bullet = enemy.bullet.create(enemy.x, enemy.y, 'bullet').setScale(0.1, 0.03);
-            const dir = enemy.getData('direction');
-            if (dir === 'up') bullet.setVelocityY(-300);
-            else if (dir === 'down') bullet.setVelocityY(300);
-            else if (dir === 'left') bullet.setVelocityX(-300);
-            else if (dir === 'right') bullet.setVelocityX(300);
-            }
+                // enemy shooting
+                const bullet = enemy.bullet.create(enemy.x, enemy.y, 'bullet').setScale(0.1, 0.03);
+                const dir = enemy.getData('direction');
+                if (dir === 'up') bullet.setVelocityY(-300);
+                else if (dir === 'down') bullet.setVelocityY(300);
+                else if (dir === 'left') bullet.setVelocityX(-300);
+                else if (dir === 'right') bullet.setVelocityX(300);
+
+                if(bullet.x < 0 || bullet.x > this.game.config.width ||
+                    bullet.y < 0 || bullet.y > this.game.config.height){
+                    bullet.destroy();
+                }
+                }
         }, this)
+
     }
 }
