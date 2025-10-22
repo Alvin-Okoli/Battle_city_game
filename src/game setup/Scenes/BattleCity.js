@@ -54,6 +54,10 @@ export default class BattleCity extends Phaser.Scene {
                     player.health -= 1;
                     this.playerHealthRecord.setText(`Health: ${player.health}`);
                 }
+                if(this.playerHealth === 0){
+                    this.physics.pause();
+                    this.gameOver = this.add.text(this.game.config.width/2 - 80, this.game.config.height/2, 'Game Over', { fontSize: '80px', fill: '#ff0000' });
+                }
             })
             this.physics.add.collider(this.ironBlockGroup, enemy.bullet, (ironBlock, bullet)=>{
                 bullet.destroy();
@@ -132,6 +136,8 @@ export default class BattleCity extends Phaser.Scene {
         // Text Setup 
         this.playerHealthRecord = this.add.text(50, 20, `Health: 4`);
         this.playerHealthRecord.depth = 2;
+        this.scoreRecord = this.add.text(50, 40, `Score: 0`)
+        this.scoreRecord.depth = 2;
         this.menuText = this.add.text(this.game.config.width - 80, 20, `Menu`);
         this.menuText.depth = 2;
         this.menuText.setInteractive({ useHandCursor: true });
@@ -141,6 +147,20 @@ export default class BattleCity extends Phaser.Scene {
         if (this.isPaused) {
             this.physics.pause();
             this.pauseBlock = this.add.rectangle(this.game.config.width/2, 400, 300, 300, 0xffffff);
+            this.resumeText = this.add.text(this.game.config.width/2 - 80, 300, 'Resume', { fontSize: '32px', fill: '#000' }).setInteractive({ useHandCursor: true });
+            this.resumeText.on('pointerdown', () => {
+                this.isPaused = false;
+                this.physics.resume();
+                this.pauseBlock.destroy();
+                this.resumeText.destroy();
+                this.restartText.destroy();
+                this.settingText.destroy();
+                this.quitText.destroy();
+            });
+            this.restartText = this.add.text(this.game.config.width/2 - 80, 350, 'Restart', { fontSize: '32px', fill: '#000' }).setInteractive({ useHandCursor: true });
+            this.settingText = this.add.text(this.game.config.width/2 - 80, 400, 'Settings', { fontSize: '32px', fill: '#000' }).setInteractive({ useHandCursor: true });
+            this.quitText = this.add.text(this.game.config.width/2 - 80, 450, 'Quit', { fontSize: '32px', fill: '#000' }).setInteractive({ useHandCursor: true });
+            
         } else {
             this.physics.resume();
             this.pauseBlock.destroy();
@@ -218,6 +238,8 @@ export default class BattleCity extends Phaser.Scene {
             bullet.destroy();
             tank.destroy();
             this.createEnemy({x:Math.abs(Math.random()* this.game.config.width), y:this.game.config.height-950})
+            this.score += 3;
+            this.scoreRecord.setText(`Score: ${this.score.toString()}`);
         })
     }
 

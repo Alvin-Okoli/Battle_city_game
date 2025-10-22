@@ -8,6 +8,7 @@
 - Ethers.js.
 - Express.
 - MongoDB.
+- Tailwindcss
 
 # Getting Started
 # Environment Variables
