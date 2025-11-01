@@ -6,7 +6,7 @@ export default class BattleCity extends Phaser.Scene {
 
         this.speed = 200;
         this.playerHealthRecord = null;
-        this.score = null;
+        this.score = 0;
         this.isPaused = false
     }
 
@@ -54,9 +54,20 @@ export default class BattleCity extends Phaser.Scene {
                     player.health -= 1;
                     this.playerHealthRecord.setText(`Health: ${player.health}`);
                 }
-                if(this.playerHealth === 0){
-                    this.physics.pause();
-                    this.gameOver = this.add.text(this.game.config.width/2 - 80, this.game.config.height/2, 'Game Over', { fontSize: '80px', fill: '#ff0000' });
+                if(this.player.health === 0){
+                    this.enemyBulletGroup.clear(true, true);
+                    this.playerBulletGroup.clear(true, true);
+                    this.gameOverBlock = this.add.rectangle(this.game.config.width/2, 450, 400, 300, 0xffffff);
+                    this.gameOverText = this.add.text(140, 350, 'Game Over', { fontSize: '52px', fill: '#ff0000' });
+                    this.scoreRecordGameOverText = this.add.text(140, 450, `Final Score: ${this.score}`, { fontSize: '32px', fill: '#000'});
+                    this.player.setVisible(false)
+                    this.time.addEvent({
+                        delay: 500,
+                        callback: ()=>{
+                            console.log('going back to main menu')
+                            this.navigate('/')
+                        }
+                    })
                 }
             })
             this.physics.add.collider(this.ironBlockGroup, enemy.bullet, (ironBlock, bullet)=>{
@@ -82,7 +93,19 @@ export default class BattleCity extends Phaser.Scene {
         this.ironBlockGroup = this.physics.add.group({immovable: true})
         this.playerBulletGroup = this.physics.add.group();
         this.enemyGroup = this.physics.add.group({collideWorldBounds: true})
-        this.enemyBulletGroup = this.physics.add.group()
+        this.enemyBulletGroup = this.physics.add.group();
+
+        // Pause Menu Texts
+        this.resumeText = this.add.text(this.game.config.width/2 - 80, 300, 'Resume', { fontSize: '32px', fill: '#000' }).setInteractive({ useHandCursor: true }).setVisible(false);
+        this.restartText = this.add.text(this.game.config.width/2 - 80, 350, 'Restart', { fontSize: '32px', fill: '#000' }).setInteractive({ useHandCursor: true }).setVisible(false);
+        this.settingText = this.add.text(this.game.config.width/2 - 80, 400, 'Settings', { fontSize: '32px', fill: '#000' }).setInteractive({ useHandCursor: true }).setVisible(false);
+        this.quitText = this.add.text(this.game.config.width/2 - 80, 450, 'Quit', { fontSize: '32px', fill: '#000' }).setInteractive({ useHandCursor: true }).setVisible(false);
+
+        this.resumeText.depth = 2;
+        this.restartText.depth = 2;
+        this.settingText.depth = 2;
+        this.quitText.depth = 2;
+        
 
         // enviroment Setup  
         // RED BLOCKS
@@ -143,29 +166,38 @@ export default class BattleCity extends Phaser.Scene {
         this.menuText.setInteractive({ useHandCursor: true });
 
         this.menuText.on('pointerdown', () => {
+        if(this.player.health > 0){    
             this.isPaused = !this.isPaused;
-        if (this.isPaused) {
-            this.physics.pause();
-            this.pauseBlock = this.add.rectangle(this.game.config.width/2, 400, 300, 300, 0xffffff);
-            this.resumeText = this.add.text(this.game.config.width/2 - 80, 300, 'Resume', { fontSize: '32px', fill: '#000' }).setInteractive({ useHandCursor: true });
-            this.resumeText.on('pointerdown', () => {
-                this.isPaused = false;
+            if (this.isPaused) {
+                this.physics.pause();
+                this.pauseBlock = this.add.rectangle(this.game.config.width/2, 400, 300, 300, 0xffffff);
+                this.resumeText.setVisible(true);
+                this.restartText.setVisible(true);
+                this.settingText.setVisible(true);
+                this.quitText.setVisible(true);
+                this.resumeText.on('pointerdown', () => {
+                    this.isPaused = false;
+                    this.physics.resume();
+                    this.pauseBlock.destroy();
+                    this.resumeText.setVisible(false);
+                    this.restartText.setVisible(false);
+                    this.settingText.setVisible(false);
+                    this.quitText.setVisible(false);
+                });
+            } else {
                 this.physics.resume();
                 this.pauseBlock.destroy();
-                this.resumeText.destroy();
-                this.restartText.destroy();
-                this.settingText.destroy();
-                this.quitText.destroy();
-            });
-            this.restartText = this.add.text(this.game.config.width/2 - 80, 350, 'Restart', { fontSize: '32px', fill: '#000' }).setInteractive({ useHandCursor: true });
-            this.settingText = this.add.text(this.game.config.width/2 - 80, 400, 'Settings', { fontSize: '32px', fill: '#000' }).setInteractive({ useHandCursor: true });
-            this.quitText = this.add.text(this.game.config.width/2 - 80, 450, 'Quit', { fontSize: '32px', fill: '#000' }).setInteractive({ useHandCursor: true });
-            
-        } else {
-            this.physics.resume();
-            this.pauseBlock.destroy();
+                this.resumeText.setVisible(false);
+                this.restartText.setVisible(false);
+                this.settingText.setVisible(false);
+                this.quitText.setVisible(false);
+            }
         }
         });
+
+        this.quitText.on('pointerdown', () => {
+                this.navigate('/');
+            });
 
         // SPRITES
         // player sprites
@@ -181,30 +213,34 @@ export default class BattleCity extends Phaser.Scene {
 
         // Listen for pointer (click or tap)
         this.input.on('pointerdown', (pointer) => {
-        const worldPoint = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
-        // Set the new target position to where the user clicked
-        this.target.set(worldPoint.x, worldPoint.y);
+            if(!this.isPaused){
+                const worldPoint = new Phaser.Math.Vector2(pointer.x, pointer.y);
+                // Set the new target position to where the user clicked
+                this.target.set(worldPoint.x, worldPoint.y);
+            }
         });
 
         //bullet
         this.time.addEvent({
             delay: 400,
             callback:()=>{
-                const rad = Phaser.Math.DegToRad(this.player.angleFacing);
-                const speed = 400;
+                    if(this.player.health > 0){
+                    const rad = Phaser.Math.DegToRad(this.player.angleFacing);
+                    const speed = 400;
 
-                // spawn bullet slightly in front of tank
-                // const offsetX = Math.cos(rad); 
-                // const offsetY = Math.sin(rad);
+                    // spawn bullet slightly in front of tank
+                    // const offsetX = Math.cos(rad); 
+                    // const offsetY = Math.sin(rad);
 
-                const bullet = this.physics.add.sprite(this.player.x, this.player.y, 'bullet').setScale(0.1, 0.03);
+                    const bullet = this.physics.add.sprite(this.player.x, this.player.y, 'bullet').setScale(0.1, 0.03);
 
-                bullet.rotation = rad;
-                bullet.angleFacing = this.player.angleFacing;
-                bullet.body.setSize(100, 0.2)
+                    bullet.rotation = rad;
+                    bullet.angleFacing = this.player.angleFacing;
+                    bullet.body.setSize(100, 0.2)
 
-                // this.physics.velocityFromRotation(40, speed, bullet.body.velocity);
-                this.playerBulletGroup.add(bullet);
+                    // this.physics.velocityFromRotation(40, speed, bullet.body.velocity);
+                    this.playerBulletGroup.add(bullet);
+                }
             },
             loop: true
         })
@@ -316,42 +352,46 @@ export default class BattleCity extends Phaser.Scene {
             if(time > enemyNextTurn){
                 // reset speed
                 enemy.setVelocity(0, 0) 
-                // Change direction for this specific enemy
-                this.changeDirection(enemy);
-                // get direction for this specific enemy
-                const direction = enemy.getData('direction')
-                // get speed for this specific enemy
-                const speed = enemy.getData('speed')
+                if(this.isPaused === false){
+                    // Change direction for this specific enemy
+                    this.changeDirection(enemy);
+                    // get direction for this specific enemy
+                    const direction = enemy.getData('direction')
+                    // get speed for this specific enemy
+                    const speed = enemy.getData('speed')
 
-                if(direction === 'down'){
-                    enemy.rotation = Phaser.Math.DegToRad(180)
-                    enemy.setVelocityY(speed)
-                }
-                else if(direction === 'up'){
-                    enemy.rotation = Phaser.Math.DegToRad(0)
-                    enemy.setVelocityY(-speed)
-                }
-                else if(direction === 'right'){
-                    enemy.rotation = Phaser.Math.DegToRad(90)
-                    enemy.setVelocityX(speed)
-                }
-                else if(direction === 'left'){
-                    enemy.rotation = Phaser.Math.DegToRad(-90)
-                    enemy.setVelocityX(-speed)
-                }
-                enemy.setData('nextTurn', time + Phaser.Math.Between(1000, 3000))
+                    if(direction === 'down'){
+                        enemy.rotation = Phaser.Math.DegToRad(180)
+                        enemy.setVelocityY(speed)
+                    }
+                    else if(direction === 'up'){
+                        enemy.rotation = Phaser.Math.DegToRad(0)
+                        enemy.setVelocityY(-speed)
+                    }
+                    else if(direction === 'right'){
+                        enemy.rotation = Phaser.Math.DegToRad(90)
+                        enemy.setVelocityX(speed)
+                    }
+                    else if(direction === 'left'){
+                        enemy.rotation = Phaser.Math.DegToRad(-90)
+                        enemy.setVelocityX(-speed)
+                    }
+                    enemy.setData('nextTurn', time + Phaser.Math.Between(1000, 3000))
 
-                // enemy shooting
-                const bullet = enemy.bullet.create(enemy.x, enemy.y, 'bullet').setScale(0.1, 0.03);
-                const dir = enemy.getData('direction');
-                if (dir === 'up') bullet.setVelocityY(-300);
-                else if (dir === 'down') bullet.setVelocityY(300);
-                else if (dir === 'left') bullet.setVelocityX(-300);
-                else if (dir === 'right') bullet.setVelocityX(300);
+                    // enemy shooting
+                    if(this.player.health > 0 ){
+                        const bullet = enemy.bullet.create(enemy.x, enemy.y, 'bullet').setScale(0.1, 0.03);
+                        const dir = enemy.getData('direction');
+                        if (dir === 'up') bullet.setVelocityY(-300);
+                        else if (dir === 'down') bullet.setVelocityY(300);
+                        else if (dir === 'left') bullet.setVelocityX(-300);
+                        else if (dir === 'right') bullet.setVelocityX(300);
 
-                if(bullet.x < 0 || bullet.x > this.game.config.width ||
-                    bullet.y < 0 || bullet.y > this.game.config.height){
-                    bullet.destroy();
+                        if(bullet.x < 0 || bullet.x > this.game.config.width ||
+                            bullet.y < 0 || bullet.y > this.game.config.height){
+                            bullet.destroy();
+                        }
+                    }
                 }
                 }
         }, this)

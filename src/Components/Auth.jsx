@@ -39,7 +39,7 @@ export default function Auth() {
   };
 
   return (
-     <div className='text-center bg-black h-screen pt-40 bg-[url(BattlefieldBackground.jpeg)] bg-bottom lg:bg-center bg-no-repeat bg-cover'>
+     <div className='text-center bg-black h-screen pt-40 bg-[url(/BattlefieldBackground.jpeg)] bg-bottom lg:bg-center bg-no-repeat bg-cover'>
       <h1 className='text-5xl font-bold text-white mb-30'>Neura Chain Battle City</h1>
 
       <div>
