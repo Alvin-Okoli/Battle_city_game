@@ -10,7 +10,7 @@ export default function Auth() {
   const connectWallet = async ()=>{
       try{
         const wcProvider = await EthereumProvider.init({
-        projectId: '2c5dfc1dcf07e110a8fef3a65835ea88',
+        projectId: '',
         optionalChains: [1],
         showQrModal: true,
         relayUrl: 'wss://relay.walletconnect.com',
