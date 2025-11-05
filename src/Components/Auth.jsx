@@ -37,7 +37,7 @@ const projectId = import.meta.env.VITE_PROJECT_ID;
 const metadata = {
   name: "Battle City Game",
   description: "Neura Chain Battle City Game",
-  url: "http://localhost:5173",
+  url: "//https://battle-city-game.vercel.app",
   icons: [],
 };
 
