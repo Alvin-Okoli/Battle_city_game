@@ -4,7 +4,7 @@ export default class BattleCity extends Phaser.Scene {
     constructor() {
         super({ key:'BattleCity' });
 
-        this.speed = 200;
+        this.speed = 160;
         this.playerHealthRecord = null;
         this.score = 0;
         this.isPaused = false
@@ -276,6 +276,7 @@ export default class BattleCity extends Phaser.Scene {
             this.createEnemy({x:Math.abs(Math.random()* this.game.config.width), y:this.game.config.height-950})
             this.score += 3;
             this.scoreRecord.setText(`Score: ${this.score.toString()}`);
+            this.game.playerScore(this.score);
         })
     }
 

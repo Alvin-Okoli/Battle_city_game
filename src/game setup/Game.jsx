@@ -3,11 +3,13 @@ import { useNavigate } from 'react-router-dom'
 
 import LoadingScene from "./Scenes/LoadingScene";
 import BattleCity from "./Scenes/BattleCity";
-import { use, useEffect, useRef } from "react";
+import { use, useContext, useEffect, useRef } from "react";
+import { ScoreContext } from "../providers/AuthProvider";
 
 export default function Game({parent, width= 550, height= 1000}) {
     const navigate = useNavigate();
     const gameContainer = useRef(null);
+    const {setScore} = useContext(ScoreContext)
 
     useEffect(()=>{
         const game = new Phaser.Game({
@@ -30,6 +32,7 @@ export default function Game({parent, width= 550, height= 1000}) {
             callbacks: {
                 postBoot: (game)=> {
                     game.scene.keys.BattleCity.navigate = navigate;
+                    game.playerScore = setScore;
                 }
             }
         });
@@ -46,5 +49,3 @@ export default function Game({parent, width= 550, height= 1000}) {
             }}
         />
 };
-
-//
